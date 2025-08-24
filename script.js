@@ -7,6 +7,11 @@ class CoinFlip3D {
         this.renderer = null;
         this.coin = null;
         
+        // Camera initial state for smooth animations
+        this.initialCameraPosition = { x: 0, y: 2, z: 8 };
+        this.initialCameraTarget = { x: 0, y: 0, z: 0 };
+        this.isCameraAnimating = false;
+        
         this.init();
     }
 
@@ -65,7 +70,7 @@ class CoinFlip3D {
         const ambientLight = new THREE.AmbientLight(0x404040, 0.4);
         this.scene.add(ambientLight);
         
-        // Main directional light (key light)
+        // Main directional light (key light) - ONLY source with shadows
         const mainLight = new THREE.DirectionalLight(0xffffff, 2.5);
         mainLight.position.set(8, 10, 6);
         mainLight.castShadow = true;
@@ -80,24 +85,24 @@ class CoinFlip3D {
         this.scene.add(mainLight);
         this.lights = { main: mainLight };
         
-        // Fill light for even illumination
-        const fillLight = new THREE.DirectionalLight(0x6495ed, 0.8);
+        // Fill light for even illumination (NO SHADOWS)
+        const fillLight = new THREE.DirectionalLight(0x6495ed, 0.6);
         fillLight.position.set(-5, 3, -5);
+        fillLight.castShadow = false; // Disable shadows
         this.scene.add(fillLight);
         this.lights.fill = fillLight;
         
-        // Rim light for metallic highlights
-        const rimLight = new THREE.DirectionalLight(0xffd700, 1.2);
+        // Rim light for metallic highlights (NO SHADOWS)
+        const rimLight = new THREE.DirectionalLight(0xffd700, 1.0);
         rimLight.position.set(-2, 2, -8);
+        rimLight.castShadow = false; // Disable shadows
         this.scene.add(rimLight);
         this.lights.rim = rimLight;
         
-        // Point light for additional sparkle
-        const pointLight = new THREE.PointLight(0xffffff, 1.0, 20);
+        // Point light for additional sparkle (NO SHADOWS)
+        const pointLight = new THREE.PointLight(0xffffff, 0.8, 20);
         pointLight.position.set(0, 8, 4);
-        pointLight.castShadow = true;
-        pointLight.shadow.mapSize.width = 1024;
-        pointLight.shadow.mapSize.height = 1024;
+        pointLight.castShadow = false; // Disable shadows
         this.scene.add(pointLight);
         this.lights.point = pointLight;
     }
@@ -163,12 +168,34 @@ class CoinFlip3D {
         this.coin.position.set(0, 0, 0);
         this.scene.add(this.coin);
         
-        // Add ground plane for shadows
+        // Add transparent glossy platform
+        const platformGeometry = new THREE.CylinderGeometry(3.5, 3.5, 0.4, 64);
+        const platformMaterial = new THREE.MeshPhysicalMaterial({
+            color: 0xf0f8ff,
+            metalness: 0.05,
+            roughness: 0.02,
+            transmission: 0.85,
+            transparent: true,
+            opacity: 0.9,
+            clearcoat: 1.0,
+            clearcoatRoughness: 0.03,
+            ior: 1.52, // Glass-like refraction
+            thickness: 0.4,
+            envMapIntensity: 1.5
+        });
+        const platform = new THREE.Mesh(platformGeometry, platformMaterial);
+        platform.position.y = -0.6;
+        platform.castShadow = true;
+        platform.receiveShadow = true;
+        this.scene.add(platform);
+
+
+        // Add ground plane for shadows (lower and more subtle)
         const groundGeometry = new THREE.PlaneGeometry(20, 20);
-        const groundMaterial = new THREE.ShadowMaterial({ opacity: 0.3 });
+        const groundMaterial = new THREE.ShadowMaterial({ opacity: 0.15 });
         const ground = new THREE.Mesh(groundGeometry, groundMaterial);
         ground.rotation.x = -Math.PI / 2;
-        ground.position.y = -3;
+        ground.position.y = -1.5;
         ground.receiveShadow = true;
         this.scene.add(ground);
     }
@@ -376,8 +403,75 @@ class CoinFlip3D {
         });
     }
 
+    resetCameraToInitial() {
+        this.camera.position.set(
+            this.initialCameraPosition.x,
+            this.initialCameraPosition.y,
+            this.initialCameraPosition.z
+        );
+        this.camera.lookAt(
+            this.initialCameraTarget.x,
+            this.initialCameraTarget.y,
+            this.initialCameraTarget.z
+        );
+        this.isCameraAnimating = false;
+    }
+
+    animateCamera(timeline, totalDuration) {
+        this.isCameraAnimating = true;
+        
+        // Phase 1: Y-axis follow during coin ascent (match coin's up phase)
+        timeline.to(this.camera.position, {
+            duration: totalDuration * 0.4, // Same duration as coin's up phase
+            y: 5, // Follow coin upward
+            ease: "power2.out"
+        }, 0); // Start immediately with coin
+        
+        // Phase 2: Move higher and closer when coin reaches peak  
+        timeline.to(this.camera.position, {
+            duration: totalDuration * 0.3,
+            y: 8,
+            z: 4, // Move closer to coin
+            ease: "power2.inOut"
+        }, totalDuration * 0.4); // Start when coin reaches peak
+        
+        // Update camera rotation to look down at coin during peak
+        timeline.to(this.camera.rotation, {
+            duration: totalDuration * 0.3,
+            x: -Math.PI * 0.3, // Look down at coin
+            ease: "power2.inOut"
+        }, totalDuration * 0.4);
+        
+        // Phase 3: Return to original position during fall
+        timeline.to(this.camera.position, {
+            duration: totalDuration * 0.3,
+            x: this.initialCameraPosition.x,
+            y: this.initialCameraPosition.y,
+            z: this.initialCameraPosition.z,
+            ease: "power2.inOut"
+        }, totalDuration * 0.7);
+        
+        // Reset camera rotation to look at center
+        timeline.to(this.camera.rotation, {
+            duration: totalDuration * 0.3,
+            x: 0,
+            y: 0,
+            z: 0,
+            ease: "power2.inOut",
+            onComplete: () => {
+                // Ensure camera is properly looking at target
+                this.camera.lookAt(
+                    this.initialCameraTarget.x,
+                    this.initialCameraTarget.y,
+                    this.initialCameraTarget.z
+                );
+                this.isCameraAnimating = false;
+            }
+        }, totalDuration * 0.7);
+    }
+
     flipCoin() {
-        if (this.isFlipping) return;
+        if (this.isFlipping || this.isCameraAnimating) return;
         
         this.isFlipping = true;
         
@@ -388,6 +482,9 @@ class CoinFlip3D {
         if (result) {
             result.classList.remove('show', 'heads-result', 'tails-result');
         }
+        
+        // Reset camera to initial position before starting
+        this.resetCameraToInitial();
         
         // Randomly determine the result
         const isHeads = Math.random() < 0.5;
@@ -410,20 +507,23 @@ class CoinFlip3D {
         // Create single timeline for synchronized motion
         const timeline = gsap.timeline();
         
+        // Add camera animation to the timeline
+        this.animateCamera(timeline, totalDuration);
+        
         // Simple parabolic trajectory using power eases
         // Up phase
         timeline.to(this.coin.position, {
             duration: totalDuration * 0.4,
             y: peakHeight,
             ease: "power2.out"
-        });
+        }, 0);
         
         // Down phase
         timeline.to(this.coin.position, {
             duration: totalDuration * 0.6,
             y: 0,
             ease: "power2.in"
-        });
+        }, totalDuration * 0.4);
         
         // Constant rotation speed throughout the entire flight
         timeline.to(this.coin.rotation, {
@@ -439,7 +539,7 @@ class CoinFlip3D {
             y: 0,
             z: 0,
             ease: "power2.out"
-        });
+        }, totalDuration);
         
         // Small bounce on landing
         timeline.to(this.coin.position, {
@@ -452,7 +552,7 @@ class CoinFlip3D {
             duration: 0.2,
             y: 0,
             ease: "bounce.out"
-        });
+        }, totalDuration + 0.2);
         
         // Show result after everything settles
         timeline.call(() => {
@@ -466,7 +566,7 @@ class CoinFlip3D {
             setTimeout(() => {
                 this.isFlipping = false;
             }, 800);
-        });
+        }, [], totalDuration + 0.4);
     }
 
     onWindowResize() {
@@ -483,6 +583,15 @@ class CoinFlip3D {
 
     animate() {
         requestAnimationFrame(() => this.animate());
+        
+        // Ensure camera maintains proper orientation when not animating
+        if (!this.isCameraAnimating && !this.isFlipping) {
+            this.camera.lookAt(
+                this.initialCameraTarget.x,
+                this.initialCameraTarget.y,
+                this.initialCameraTarget.z
+            );
+        }
         
         // Only render - no automatic rotations during or after flipping
         this.renderer.render(this.scene, this.camera);
