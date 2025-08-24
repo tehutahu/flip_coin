@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>コイントス</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="click-area" id="clickArea">
+        <div class="instruction">画面をタップしてコインを投げる</div>
+        
+        <div class="three-container" id="threeContainer"></div>
+        
+        <div class="result" id="result"></div>
+    </div>
+
+    <script src="https://unpkg.com/three@0.160.0/build/three.min.js"></script>
+    <script src="https://unpkg.com/gsap@3.12.2/dist/gsap.min.js"></script>
+    <script>
+        // Wait for all scripts to load before initializing
+        let scriptsLoaded = 0;
+        const totalScripts = 2;
+        
+        function checkScriptsLoaded() {
+            scriptsLoaded++;
+            if (scriptsLoaded >= totalScripts) {
+                console.log('All libraries loaded');
+                console.log('THREE available:', typeof THREE !== 'undefined');
+                console.log('GSAP available:', typeof gsap !== 'undefined');
+            }
+        }
+        
+        // Monitor script loading
+        document.addEventListener('DOMContentLoaded', checkScriptsLoaded);
+        window.addEventListener('load', checkScriptsLoaded);
+    </script>
+    <script src="script.js"></script>
+</body>
+</html>
