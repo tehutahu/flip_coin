@@ -100,8 +100,9 @@ body::before {
     bottom: 15%;
     left: 50%;
     transform: translateX(-50%);
-    font-size: 2.5rem;
+    font-size: 3rem;
     font-weight: 300;
+    font-family: 'Brush Script MT', 'Lucida Handwriting', 'Snell Roundhand', cursive;
     color: #fff;
     text-align: center;
     opacity: 0;

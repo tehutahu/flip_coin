@@ -162,8 +162,8 @@ class CoinFlip3D {
         this.coin.add(tailsMesh);
         
         // Add enhanced decorative surfaces
-        this.addCoinText(headsMesh, '表', true);  // true for heads
-        this.addCoinText(tailsMesh, '裏', false); // false for tails
+        this.addCoinDesign(headsMesh, true);  // true for heads
+        this.addCoinDesign(tailsMesh, false); // false for tails
         
         this.coin.position.set(0, 0, 0);
         this.scene.add(this.coin);
@@ -243,16 +243,6 @@ class CoinFlip3D {
         // Draw decorative geometric patterns
         this.drawGeometricPattern(context, centerX, centerY, radius, isHeads);
         
-        // Draw main text
-        context.fillStyle = isHeads ? '#8B4513' : '#2F4F4F';
-        context.font = `bold ${size * 0.15}px serif`;
-        context.textAlign = 'center';
-        context.textBaseline = 'middle';
-        context.shadowColor = 'rgba(0, 0, 0, 0.5)';
-        context.shadowBlur = 3;
-        context.shadowOffsetX = 1;
-        context.shadowOffsetY = 1;
-        context.fillText(text, centerX, centerY);
         
         return canvas;
     }
@@ -266,12 +256,15 @@ class CoinFlip3D {
         context.lineWidth = 2;
         
         if (isHeads) {
-            // Sunburst pattern for heads
+            // Radial pattern for heads
+            context.lineWidth = 2;
+            
+            // Main radiating lines - 16 rays
             const numRays = 16;
             for (let i = 0; i < numRays; i++) {
                 const angle = (i / numRays) * Math.PI * 2;
-                const innerRadius = radius * 0.6;
-                const outerRadius = radius * 0.9;
+                const innerRadius = radius * 0.3;
+                const outerRadius = radius * 0.85;
                 
                 context.beginPath();
                 context.moveTo(
@@ -285,38 +278,50 @@ class CoinFlip3D {
                 context.stroke();
             }
             
-            // Inner circles
-            for (let r = 0.3; r <= 0.8; r += 0.2) {
+            // Concentric circles
+            context.lineWidth = 1.5;
+            for (let r = 0.2; r <= 0.7; r += 0.15) {
                 context.beginPath();
                 context.arc(centerX, centerY, radius * r, 0, Math.PI * 2);
                 context.stroke();
             }
         } else {
-            // Star pattern for tails
-            const numPoints = 8;
-            const outerRadius = radius * 0.7;
-            const innerRadius = radius * 0.4;
+            // Radial pattern for tails (different from heads)
+            context.lineWidth = 2;
             
-            context.beginPath();
-            for (let i = 0; i < numPoints * 2; i++) {
-                const angle = (i / (numPoints * 2)) * Math.PI * 2 - Math.PI / 2;
-                const currentRadius = i % 2 === 0 ? outerRadius : innerRadius;
-                const x = centerX + Math.cos(angle) * currentRadius;
-                const y = centerY + Math.sin(angle) * currentRadius;
+            // Main radiating lines - 12 rays offset by 15 degrees from heads pattern
+            const numRays = 12;
+            const offsetAngle = Math.PI / 12; // 15 degree offset
+            for (let i = 0; i < numRays; i++) {
+                const angle = (i / numRays) * Math.PI * 2 + offsetAngle;
+                const innerRadius = radius * 0.25;
+                const outerRadius = radius * 0.85;
                 
-                if (i === 0) {
-                    context.moveTo(x, y);
-                } else {
-                    context.lineTo(x, y);
-                }
+                context.beginPath();
+                context.moveTo(
+                    centerX + Math.cos(angle) * innerRadius,
+                    centerY + Math.sin(angle) * innerRadius
+                );
+                context.lineTo(
+                    centerX + Math.cos(angle) * outerRadius,
+                    centerY + Math.sin(angle) * outerRadius
+                );
+                context.stroke();
             }
-            context.closePath();
-            context.stroke();
             
-            // Outer decorative ring
-            context.beginPath();
-            context.arc(centerX, centerY, radius * 0.85, 0, Math.PI * 2);
-            context.stroke();
+            // Concentric squares for variation
+            context.lineWidth = 1.5;
+            for (let s = 0.3; s <= 0.7; s += 0.2) {
+                const sideLength = radius * s * 1.4; // Square diagonal to match circle
+                context.beginPath();
+                context.rect(
+                    centerX - sideLength / 2,
+                    centerY - sideLength / 2,
+                    sideLength,
+                    sideLength
+                );
+                context.stroke();
+            }
         }
         
         context.restore();
@@ -350,9 +355,9 @@ class CoinFlip3D {
         return normalCanvas;
     }
 
-    addCoinText(mesh, text, isHeads) {
+    addCoinDesign(mesh, isHeads) {
         // Create detailed coin texture
-        const canvas = this.createCoinTexture(text, isHeads);
+        const canvas = this.createCoinTexture('', isHeads);
         const normalCanvas = this.createNormalMap(canvas);
         
         // Create textures
@@ -557,7 +562,7 @@ class CoinFlip3D {
         // Show result after everything settles
         timeline.call(() => {
             if (result) {
-                result.textContent = isHeads ? '表' : '裏';
+                result.textContent = isHeads ? 'Heads' : 'Tails';
                 result.classList.add(isHeads ? 'heads-result' : 'tails-result');
                 result.classList.add('show');
             }
