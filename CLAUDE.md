@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-This is a premium 3D coin flipping application built with Three.js and modern web technologies. The application features photorealistic 3D graphics, physics-based animations, and beautiful geometric coin designs.
+This is a premium 3D coin flipping application built with Three.js and modern web technologies. The application features photorealistic 3D graphics, physics-based animations, elegant radial coin patterns, and stylish cursive result displays.
 
 ## Technology Stack
 
@@ -37,12 +37,13 @@ This is a premium 3D coin flipping application built with Three.js and modern we
 
 ### Visual Features
 
-- **Geometric Coin Designs**: Procedurally generated patterns
-  - Heads: Sunburst pattern with concentric circles
-  - Tails: 8-pointed star with decorative rings
+- **Elegant Radial Designs**: Clean geometric patterns
+  - Heads: 16-ray radial pattern with concentric circles (gold)
+  - Tails: 12-ray pattern (15° offset) with concentric squares (silver)
 - **Metallic Materials**: Gold and silver PBR shaders
 - **Dynamic Lighting**: Multi-source lighting for realistic reflections
 - **High-Resolution Textures**: 512x512 canvas-generated textures
+- **Stylish Result Display**: Cursive "Heads"/"Tails" with glowing effects
 
 ## File Structure
 
